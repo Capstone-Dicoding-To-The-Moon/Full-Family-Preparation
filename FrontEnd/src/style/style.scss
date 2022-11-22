@@ -1,0 +1,85 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  background-color: rgb(197, 197, 197);
+}
+
+.carousel {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+.carousel-body-card {
+  position: absolute;
+  width: 100%;
+  height: 45px;
+  left: -7px;
+  top: -5px;
+  margin-bottom: 20px;
+
+  background: #ad4e20;
+  mix-blend-mode: normal;
+  box-shadow: 0px 4px 4px rgba(0, 0, 0, 0.25);
+  border-radius: 20px;
+}
+.carousel-caption-card {
+  position: absolute;
+  width: 100%;
+  height: 70px;
+  top: -40px;
+  max-width: 310px;
+  max-height: 55px;
+
+  border: 3px solid #1de8f1;
+  border-radius: 20px;
+}
+.carousel-body-card .card-text {
+  position: absolute;
+  width: 100%;
+  height: 20px;
+  left: -5px;
+  margin-top: 2px;
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 500;
+  font-size: 15px;
+  line-height: 39px;
+  color: #ffffff;
+}
+.d-block {
+  width: 100%;
+}
+.card-btn {
+  cursor: pointer;
+  font-size: 15px;
+  width: 120px;
+  box-sizing: border-box;
+  color: slateblue;
+  background: #ffffff;
+  border: 1px solid slateblue;
+  box-shadow: 0px 4px 10px rgba(98, 142, 144, 0.2);
+}
+.card-btn:hover {
+  color: white;
+  background-color: slateblue;
+}
+.carousel-indicators [data-bs-target] {
+  width: 5px;
+  height: 10px;
+  margin-top: 190px;
+}
+
+.buttonNav {
+  color: green;
+  border: 1px solid green;
+}
+
+footer {
+  background-color: rgb(108, 51, 51);
+  position: relative;
+  bottom: 0;
+  width: 100%;
+}
