@@ -1,15 +1,14 @@
-const responseHelper = require('../helpers/responseHelper');
+const {
+  response200Handler,
+  response400Handler,
+  response404Handler,
+  response201Handler,
+} = require('../helpers/responseHelper');
 
 const getKategoriForum = async (request, h) => {
   const { prisma } = request.server.app;
   const kategoriForum = await prisma.kategoriForum.findMany({});
-  return responseHelper(
-    h,
-    'success',
-    'Data berhasil didapatkan',
-    200,
-    kategoriForum,
-  );
+  return response200Handler(h, 'get', kategoriForum);
 };
 
 const getKategoriForumById = async (request, h) => {
@@ -17,12 +16,7 @@ const getKategoriForumById = async (request, h) => {
   const { id } = request.params;
 
   if (!id) {
-    return responseHelper(
-      h,
-      'failed',
-      'Gagal mendapatkan kategori forum. Mohon isi id kategori forum',
-      400,
-    );
+    return response400Handler(h, 'get', 'kategori forum', 'id');
   }
 
   const kategoriForumById = await prisma.kategoriForum.findUnique({
@@ -32,21 +26,10 @@ const getKategoriForumById = async (request, h) => {
   });
 
   if (kategoriForumById) {
-    return responseHelper(
-      h,
-      'success',
-      'Data berhasil didapatkan',
-      200,
-      kategoriForumById,
-    );
+    return response200Handler(h, 'get', kategoriForumById);
   }
 
-  return responseHelper(
-    h,
-    'failed',
-    'Gagal mendapatkan kategori forum. Id tidak ditemukan.',
-    404,
-  );
+  return response404Handler(h, 'get', 'kategori forum', 'Id');
 };
 
 const addKategoriForum = async (request, h) => {
@@ -54,21 +37,11 @@ const addKategoriForum = async (request, h) => {
   const { forumId, kategoriId } = request.payload;
 
   if (!forumId) {
-    return responseHelper(
-      h,
-      'failed',
-      'Gagal menambahkan kategori forum. Mohon isi id kategori forum',
-      400,
-    );
+    return response400Handler(h, 'add', 'kategori forum', 'forum id');
   }
 
   if (!kategoriId) {
-    return responseHelper(
-      h,
-      'failed',
-      'Gagal menambahkan kategori forum. Mohon isi id kategori',
-      400,
-    );
+    return response400Handler(h, 'add', 'kategori forum', 'kategori id');
   }
 
   const createdKategoriForum = await prisma.kategoriForum.create({
@@ -78,13 +51,7 @@ const addKategoriForum = async (request, h) => {
     },
   });
 
-  return responseHelper(
-    h,
-    'success',
-    'Forum berhasil ditambahkan',
-    201,
-    createdKategoriForum,
-  );
+  return response201Handler(h, 'kategori forum', createdKategoriForum);
 };
 
 module.exports = { getKategoriForum, getKategoriForumById, addKategoriForum };

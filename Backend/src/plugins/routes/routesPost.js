@@ -10,18 +10,22 @@ const {
   updateDownVote,
   getPostById,
 } = require('../handlers/postHandlers');
-const { routesHelper, routesHelperStream } = require('../helpers/routesHelper');
+const {
+  routesHelper,
+  routesHelperStream,
+  routesHelperWithoutAuth,
+} = require('../helpers/routesHelper');
 
 const routesPost = [
-  routesHelper('GET', '/posts', getAllPost),
-  routesHelper('GET', '/posts/{id}', getPostById),
-  routesHelper('GET', '/postsDates', getAllPostWithOrderDate),
-  routesHelper('GET', '/postsCat/{id}', getPostByCategories),
-  routesHelper('GET', '/postsCom/{id}', getPostWithCommentById),
-  routesHelperStream('PUT', '/posts', updatePost),
-  routesHelper('PUT', '/postsUpVote', updateUpVote),
-  routesHelper('PUT', '/postsDownVote', updateDownVote),
-  routesHelper('DELETE', '/posts', deletePostById),
-  routesHelperStream('POST', '/posts', addPost),
+  routesHelperWithoutAuth('GET', '/posts', getAllPost), // everyone
+  routesHelperWithoutAuth('GET', '/posts/{id}', getPostById), // everyone
+  routesHelperWithoutAuth('GET', '/postsDates', getAllPostWithOrderDate), // everyone
+  routesHelperWithoutAuth('GET', '/postsCat/{id}', getPostByCategories), // everyone
+  routesHelperWithoutAuth('GET', '/postsCom/{id}', getPostWithCommentById), // everyone
+  routesHelperStream('PUT', '/posts', updatePost), // user
+  routesHelper('PUT', '/postsUpVote', updateUpVote), // user
+  routesHelper('PUT', '/postsDownVote', updateDownVote), // user
+  routesHelper('DELETE', '/posts', deletePostById), // user
+  routesHelperStream('POST', '/posts', addPost), // user
 ];
 module.exports = routesPost;

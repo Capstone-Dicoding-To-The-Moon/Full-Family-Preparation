@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node src/server"
+    "start": "nodemon src/server"
   },
   "keywords": [],
   "author": "",
@@ -15,8 +15,10 @@
     "prisma": "^4.5.0"
   },
   "dependencies": {
+    "@hapi/basic": "^7.0.0",
     "@hapi/hapi": "^20.2.2",
     "@hapi/inert": "^7.0.0",
+    "@hapi/jwt": "^3.0.0",
     "@prisma/client": "^4.5.0",
     "nanoid": "^3.3.4",
     "sharp": "^0.31.2"

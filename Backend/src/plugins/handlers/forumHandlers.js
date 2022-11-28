@@ -1,9 +1,17 @@
-const responseHelper = require('../helpers/responseHelper');
+const {
+  response200Handler,
+  response201Handler,
+  response400Handler,
+  response400HandlerImage,
+  response401Handler,
+  response404Handler,
+} = require('../helpers/responseHelper');
 const {
   validateImageExtension,
   deleteSavedImage,
   saveImage,
 } = require('../helpers/saveImageHelper');
+const { userChecker } = require('../helpers/usersChecker');
 
 const helper = (data) => {
   for (let i = 0; i < data.length; i++) {
@@ -40,7 +48,7 @@ const getAllForum = async (request, h) => {
 
   helper(forum);
 
-  return responseHelper(h, 'success', 'Data berhasil didapatkan', 200, forum);
+  return response200Handler(h, 'get', forum);
 };
 
 const getForumById = async (request, h) => {
@@ -48,12 +56,7 @@ const getForumById = async (request, h) => {
   const { id } = request.params;
 
   if (!id) {
-    return responseHelper(
-      h,
-      'failed',
-      'Gagal mendapatkan forum. Mohon isi id forum.',
-      400,
-    );
+    return response400Handler(h, 'get', 'forum', 'id');
   }
 
   const forumById = [
@@ -72,23 +75,12 @@ const getForumById = async (request, h) => {
   ];
 
   if (!forumById) {
-    return responseHelper(
-      h,
-      'failed',
-      'Gagal mendapatkan data forum. Id tidak ditemukan',
-      404,
-    );
+    return response404Handler(h, 'get', 'forum', 'Id');
   }
 
   helper(forumById);
 
-  return responseHelper(
-    h,
-    'success',
-    'Data berhasil didapatkan',
-    200,
-    forumById[0],
-  );
+  return response200Handler(h, 'get', forumById[0]);
 };
 
 const getAllForumWithOrderDate = async (request, h) => {
@@ -108,13 +100,7 @@ const getAllForumWithOrderDate = async (request, h) => {
 
   helper(forumWithOrderDate);
 
-  return responseHelper(
-    h,
-    'success',
-    'Data berhasil didapatkan',
-    200,
-    forumWithOrderDate,
-  );
+  return response200Handler(h, 'get', forumWithOrderDate);
 };
 
 const getForumByCategories = async (request, h) => {
@@ -122,12 +108,7 @@ const getForumByCategories = async (request, h) => {
   const id = parseInt(request.params.id, 10);
 
   if (!id) {
-    return responseHelper(
-      h,
-      'failed',
-      'Gagal mendapatkan forum. Mohon isi id forum.',
-      400,
-    );
+    return response400Handler(h, 'get', 'forum', 'id');
   }
 
   const forumByCategories = await prisma.forum.findMany({
@@ -149,23 +130,12 @@ const getForumByCategories = async (request, h) => {
   });
 
   if (forumByCategories.length < 1) {
-    return responseHelper(
-      h,
-      'failed',
-      'Gagal mendapatkan data forum. Forum dengan id kategori tidak ditemukan',
-      404,
-    );
+    return response404Handler(h, 'get', 'forum', 'Id');
   }
 
   helper(forumByCategories);
 
-  return responseHelper(
-    h,
-    'success',
-    'Data berhasil didapatkan',
-    200,
-    forumByCategories,
-  );
+  return response200Handler(h, 'get', forumByCategories);
 };
 
 // Kayak getPostWithCommentById
@@ -174,12 +144,7 @@ const getForumWithDiscussionById = async (request, h) => {
   const id = parseInt(request.params.id, 10);
 
   if (!id) {
-    return responseHelper(
-      h,
-      'failed',
-      'Gagal mendapatkan forum. Mohon isi id forum.',
-      400,
-    );
+    return response400Handler(h, 'get', 'forum', 'id');
   }
 
   const data = await prisma.forum.findUnique({
@@ -196,12 +161,7 @@ const getForumWithDiscussionById = async (request, h) => {
   });
 
   if (!data) {
-    return responseHelper(
-      h,
-      'failed',
-      'Gagal mendapatkan data forum. Id tidak ditemukan',
-      404,
-    );
+    return response404Handler(h, 'get', 'forum', 'Id');
   }
 
   const forumWithKomentar = [data];
@@ -232,44 +192,26 @@ const getForumWithDiscussionById = async (request, h) => {
 
   forumWithKomentar[0].komentar = komentar;
 
-  return responseHelper(
-    h,
-    'success',
-    'Data berhasil didapatkan',
-    200,
-    forumWithKomentar[0],
-  );
+  return response200Handler(h, 'get', forumWithKomentar[0]);
 };
 
 const updateForum = async (request, h) => {
+  const { userId: uId } = request.auth.credentials;
   const { prisma } = request.server.app;
-  const { id, title, authorId, oldImage, newImage } = request.payload;
+
+  const requesterUser = await userChecker(prisma, h, uId, 'update');
+  if (requesterUser.error) {
+    return requesterUser.dataError;
+  }
+
+  const { id, title, oldImage, newImage } = request.payload;
 
   if (!id) {
-    return responseHelper(
-      h,
-      'failed',
-      'Gagal memperbarui forum. Mohon isi id forum',
-      400,
-    );
+    return response400Handler(h, 'update', 'forum', 'id');
   }
 
   if (!title) {
-    return responseHelper(
-      h,
-      'failed',
-      'Gagal memperbarui forum. Mohon isi title forum',
-      400,
-    );
-  }
-
-  if (!authorId) {
-    return responseHelper(
-      h,
-      'failed',
-      'Gagal memperbarui forum. Mohon isi authorId forum',
-      400,
-    );
+    return response400Handler(h, 'update', 'forum', 'title');
   }
 
   const forumNow = await prisma.forum.findUnique({
@@ -284,12 +226,7 @@ const updateForum = async (request, h) => {
   });
 
   if (!forumNow) {
-    return responseHelper(
-      h,
-      'failed',
-      'Gagal memperbarui forum. Id tidak ditemukan',
-      404,
-    );
+    return response404Handler(h, 'update', 'forum', 'Id');
   }
 
   let image_large = forumNow.image_large;
@@ -303,9 +240,7 @@ const updateForum = async (request, h) => {
     image_small = dataImage.data.small;
   }
 
-  const authorFId = forumNow.authorId;
-
-  if (authorFId == authorId) {
+  if (forumNow.authorId == requesterUser.data.id) {
     const now = new Date(Date.now());
     const updatedForum = [
       await prisma.forum.update({
@@ -323,15 +258,9 @@ const updateForum = async (request, h) => {
 
     helper(updatedForum);
 
-    return responseHelper(
-      h,
-      'success',
-      'Berhasil memperbarui data forum',
-      200,
-      updatedForum[0],
-    );
+    return response200Handler(h, 'update', updatedForum[0]);
   }
-  return responseHelper(h, 'failed', 'Unauthorized, Invalid Author', 401);
+  return response401Handler(h, 'author forum.');
 };
 
 const updateUpVote = async (request, h) => {
@@ -339,12 +268,7 @@ const updateUpVote = async (request, h) => {
   const id = parseInt(request.payload.id, 10);
 
   if (!id) {
-    return responseHelper(
-      h,
-      'failed',
-      'Gagal memperbarui up vote forum. Mohon isi id forum',
-      400,
-    );
+    return response400Handler(h, 'update', 'thumbs up forum', 'id');
   }
 
   let { thumbs_up } = await prisma.forum.findUnique({
@@ -354,12 +278,7 @@ const updateUpVote = async (request, h) => {
   });
 
   if (!thumbs_up) {
-    return responseHelper(
-      h,
-      'failed',
-      'Gagal memperbarui thumbs up. Id tidak ditemukan',
-      404,
-    );
+    return response404Handler(h, 'update', 'thumbs up forum', 'Id');
   }
 
   const forum = await prisma.forum.update({
@@ -371,13 +290,7 @@ const updateUpVote = async (request, h) => {
     },
   });
 
-  return responseHelper(
-    h,
-    'success',
-    'Berhasil memperbarui up vote forum',
-    200,
-    forum,
-  );
+  return response200Handler(h, 'update', forum);
 };
 
 const updateDownVote = async (request, h) => {
@@ -385,12 +298,7 @@ const updateDownVote = async (request, h) => {
   const id = parseInt(request.payload.id, 10);
 
   if (!id) {
-    return responseHelper(
-      h,
-      'failed',
-      'Gagal memperbarui down vote forum. Mohon isi id forum',
-      400,
-    );
+    return response400Handler(h, 'update', 'thumbs down forum', 'id');
   }
 
   let { thumbs_down } = await prisma.forum.findUnique({
@@ -400,12 +308,7 @@ const updateDownVote = async (request, h) => {
   });
 
   if (!thumbs_down) {
-    return responseHelper(
-      h,
-      'failed',
-      'Gagal memperbarui thumbs down. Id tidak ditemukan',
-      404,
-    );
+    return response404Handler(h, 'update', 'thumbs up forum', 'Id');
   }
 
   const forum = await prisma.forum.update({
@@ -417,76 +320,58 @@ const updateDownVote = async (request, h) => {
     },
   });
 
-  return responseHelper(
-    h,
-    'success',
-    'Berhasil memperbarui down vote forum',
-    200,
-    forum,
-  );
+  return response200Handler(h, 'update', forum);
 };
 
 const deleteForumById = async (request, h) => {
+  const { userId: uId } = request.auth.credentials;
   const { prisma } = request.server.app;
+
+  const requesterUser = await userChecker(prisma, h, uId, 'delete');
+  if (requesterUser.error) {
+    return requesterUser.dataError;
+  }
+
   const id = parseInt(request.payload.id, 10);
 
   if (!id) {
-    return responseHelper(
-      h,
-      'failed',
-      'Gagal menghapus forum. Mohon isi id forum',
-      400,
-    );
+    return response400Handler(h, 'delete', 'forum', 'id');
   }
 
-  let deletedForum;
+  let deletedForum = await prisma.forum.findUnique({ where: { id } });
 
-  try {
-    deletedForum = await prisma.forum.delete({
-      where: {
-        id,
-      },
-    });
-  } catch (e) {
-    return responseHelper(
-      h,
-      'failed',
-      'Gagal menghapus forum. Id tidak ditemukan',
-      404,
-    );
+  if (!deletedForum) {
+    return response404Handler(h, 'delete', 'forum', 'Id');
   }
 
-  return responseHelper(
-    h,
-    'success',
-    'Berhasil menghapus data forum.',
-    200,
-    deletedForum,
-  );
+  if (deletedForum.authorId != requesterUser.data.id) {
+    return response401Handler(h, 'author forum');
+  }
+
+  deletedForum = await prisma.forum.delete({
+    where: {
+      id,
+    },
+  });
+
+  return response200Handler(h, 'delete', deletedForum);
 };
 
 const addForum = async (request, h) => {
+  const { userId: uId } = request.auth.credentials;
   const { prisma } = request.server.app;
-  const { title, authorId, image } = request.payload;
+
+  const requesterUser = await userChecker(prisma, h, uId, 'add');
+  if (requesterUser.error) {
+    return requesterUser.dataError;
+  }
+
+  const { title, image } = request.payload;
 
   let dataImage;
 
   if (!title) {
-    return responseHelper(
-      h,
-      'failed',
-      'Gagal menambahkan forum. Mohon isi title forum',
-      400,
-    );
-  }
-
-  if (!authorId) {
-    return responseHelper(
-      h,
-      'failed',
-      'Gagal menambahkan forum. Mohon isi authorId forum',
-      400,
-    );
+    return response400Handler(h, 'add', 'forum', 'title');
   }
 
   if (validateImageExtension(image)) {
@@ -494,26 +379,19 @@ const addForum = async (request, h) => {
       dataImage = await saveImage(image, 'forum');
     }
   } else {
-    return responseHelper(
-      h,
-      'failed',
-      'Gagal menambahkan gambar. Mohon memberikan gambar dengan ekstensi [jpg, jpeg, atau png]',
-      400,
-    );
+    return response400HandlerImage(h);
   }
 
   const createdForum = await prisma.forum.create({
     data: {
       title,
-      authorId,
+      authorId: requesterUser.data.id,
       image_large: dataImage?.data.large,
       image_small: dataImage?.data.small,
     },
   });
 
-  return responseHelper(h, 'success', 'Forum berhasil ditambahkan', 201, {
-    createdForum,
-  });
+  return response201Handler(h, 'forum', createdForum);
 };
 
 module.exports = {

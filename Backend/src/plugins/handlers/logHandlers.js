@@ -1,4 +1,4 @@
-const responseHelper = require('../helpers/responseHelper');
+const { response200Handler } = require('../helpers/responseHelper');
 
 const getAllLogOrderByIdDescending = async (request, h) => {
   const { prisma } = request.server.app;
@@ -7,7 +7,7 @@ const getAllLogOrderByIdDescending = async (request, h) => {
       id: 'desc',
     },
   });
-  return responseHelper(h, 'success', 'Data berhasil didapatkan', 200, log);
+  return response200Handler(h, 'get', log);
 };
 
 module.exports = {

@@ -3,12 +3,15 @@ const {
   getKategoriPostById,
   addKategoriPost,
 } = require('../handlers/kategoriPostHandlers');
-const { routesHelper } = require('../helpers/routesHelper');
+const {
+  routesHelper,
+  routesHelperWithoutAuth,
+} = require('../helpers/routesHelper');
 
 const routesKategoriPost = [
-  routesHelper('GET', '/kategori_post', getKategoriPost),
-  routesHelper('GET', '/kategori_post/{id}', getKategoriPostById),
-  routesHelper('POST', '/kategori_post', addKategoriPost),
+  routesHelperWithoutAuth('GET', '/kategori_post', getKategoriPost), // everyone
+  routesHelperWithoutAuth('GET', '/kategori_post/{id}', getKategoriPostById), // everyone
+  routesHelper('POST', '/kategori_post', addKategoriPost), // user
 ];
 
 module.exports = routesKategoriPost;

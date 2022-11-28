@@ -35,4 +35,40 @@ const routesHelperStream = (method, path, handler) => {
   return route;
 };
 
-module.exports = { routesHelper, routesHelperStream };
+const routesHelperStreamWithoutAuth = (method, path, handler) => {
+  const route = {
+    method,
+    path,
+    handler,
+    options: {
+      payload: {
+        output: 'stream',
+        parse: true,
+        allow: ['multipart/form-data'],
+        maxBytes: 5 * 1024 * 1024,
+        multipart: true,
+      },
+      auth: false,
+    },
+  };
+
+  return route;
+};
+
+const routesHelperWithoutAuth = (method, path, handler) => {
+  return {
+    method,
+    path,
+    handler,
+    options: {
+      auth: false,
+    },
+  };
+};
+
+module.exports = {
+  routesHelper,
+  routesHelperStream,
+  routesHelperWithoutAuth,
+  routesHelperStreamWithoutAuth,
+};

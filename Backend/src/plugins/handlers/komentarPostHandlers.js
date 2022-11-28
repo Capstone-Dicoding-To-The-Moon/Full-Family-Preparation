@@ -1,15 +1,15 @@
-const responseHelper = require('../helpers/responseHelper');
+const {
+  response200Handler,
+  response201Handler,
+  response400Handler,
+  response401Handler,
+  response404Handler,
+} = require('../helpers/responseHelper');
 
 const getKomentarPost = async (request, h) => {
   const { prisma } = request.server.app;
   const komentarPost = await prisma.komentarPost.findMany({});
-  return responseHelper(
-    h,
-    'success',
-    'Data berhasil didapatkan',
-    200,
-    komentarPost,
-  );
+  return response200Handler(h, 'get', komentarPost);
 };
 
 const getKomentarPostById = async (request, h) => {
@@ -17,12 +17,7 @@ const getKomentarPostById = async (request, h) => {
   const { id } = request.params;
 
   if (!id) {
-    return responseHelper(
-      h,
-      'failed',
-      'Gagal mendapatkan komentar post. Mohon isi id komentar post',
-      400,
-    );
+    return response400Handler(h, 'get', 'komentar post', 'id');
   }
 
   const komentarPostById = await prisma.komentarPost.findUnique({
@@ -32,161 +27,123 @@ const getKomentarPostById = async (request, h) => {
   });
 
   if (komentarPostById) {
-    return responseHelper(
-      h,
-      'success',
-      'Data berhasil didapatkan',
-      200,
-      komentarPostById,
-    );
+    return response200Handler(h, 'get', komentarPostById);
   }
 
-  return responseHelper(
-    h,
-    'failed',
-    'Gagal mendapatkan komentar post. Id tidak ditemukan.',
-    404,
-  );
+  return response404Handler(h, 'get', 'komentar post', 'Id');
 };
 
 const updateKomentarPost = async (request, h) => {
+  const { userId: uId } = request.auth.credentials;
   const { prisma } = request.server.app;
+
+  const requesterUser = await userChecker(prisma, h, uId, 'update');
+  if (requesterUser.error) {
+    return requesterUser.dataError;
+  }
+
   const id = parseInt(request.payload.id, 10);
   const { content } = request.payload;
 
   if (!id) {
-    return responseHelper(
-      h,
-      'failed',
-      'Gagal memperbarui komentar post. Mohon isi id komentar post.',
-      400,
-    );
+    return response400Handler(h, 'update', 'komentar post', 'id');
   }
 
   if (!content) {
-    return responseHelper(
-      h,
-      'failed',
-      'Gagal memperbarui komentar post. Mohon isi konten komentar post.',
-      400,
-    );
+    return response400Handler(h, 'update', 'komentar post', 'content');
   }
 
   const now = new Date(Date.now());
 
-  let updatedKomentarPost;
-  try {
-    updatedKomentarPost = await prisma.komentarPost.update({
-      where: {
-        id,
-      },
-      data: {
-        content,
-        updatedAt: now,
-      },
-    });
-  } catch (e) {
-    return responseHelper(
-      h,
-      'failed',
-      'Gagal menghapus komentar post. Id tidak ditemukan.',
-      404,
-    );
+  let updatedKomentarPost = await prisma.komentarPost.findUnique({
+    where: { id },
+  });
+
+  if (!updatedKomentarPost) {
+    return response404Handler(h, 'update', 'komentar post', 'Id');
   }
 
-  return responseHelper(
-    h,
-    'success',
-    'Data berhasil diperbarui',
-    200,
-    updatedKomentarPost,
-  );
+  if (updatedKomentarPost.authorId != requesterUser.data.id) {
+    return response401Handler(h, 'author komentar post');
+  }
+
+  updatedKomentarPost = await prisma.komentarPost.update({
+    where: {
+      id,
+    },
+    data: {
+      content,
+      updatedAt: now,
+    },
+  });
+
+  return response200Handler(h, 'update', updatedKomentarPost);
 };
 
 const deleteKomentarPost = async (request, h) => {
+  const { userId: uId } = request.auth.credentials;
   const { prisma } = request.server.app;
+
+  const requesterUser = await userChecker(prisma, h, uId, 'delete');
+  if (requesterUser.error) {
+    return requesterUser.dataError;
+  }
+
   const id = parseInt(request.payload.id, 10);
 
   if (!id) {
-    return responseHelper(
-      h,
-      'failed',
-      'Gagal menghapus komentar post. Mohon isi id komentar post.',
-      400,
-    );
+    return response400Handler(h, 'delete', 'komentar post', 'id');
   }
 
-  let deletedKomentarPost;
-  try {
-    deletedKomentarPost = await prisma.komentarPost.delete({
-      where: {
-        id,
-      },
-    });
-  } catch (e) {
-    return responseHelper(
-      h,
-      'failed',
-      'Gagal menghapus komentar post. Id tidak ditemukan.',
-      404,
-    );
+  let deletedKomentarPost = await prisma.komentarPost.findUnique({
+    where: { id },
+  });
+
+  if (!deletedKomentarPost) {
+    return response404Handler(h, 'delete', 'komentar post', 'Id');
   }
 
-  return responseHelper(
-    h,
-    'success',
-    'Data berhasil dihapus',
-    200,
-    deletedKomentarPost,
-  );
+  if (deletedKomentarPost.authorId != requesterUser.data.id) {
+    return response401Handler(h, 'author komentar post');
+  }
+
+  deletedKomentarPost = await prisma.komentarPost.delete({
+    where: {
+      id,
+    },
+  });
+
+  return response200Handler(h, 'delete', deletedKomentarPost);
 };
 
 const addKomentarPost = async (request, h) => {
+  const { userId: uId } = request.auth.credentials;
   const { prisma } = request.server.app;
-  const { content, authorId, postId } = request.payload;
 
-  if (!authorId) {
-    return responseHelper(
-      h,
-      'failed',
-      'Gagal menambahkan komentar post. Mohon isi authorId.',
-      400,
-    );
+  const requesterUser = await userChecker(prisma, h, uId, 'add');
+  if (requesterUser.error) {
+    return requesterUser.dataError;
   }
 
+  const { content, postId } = request.payload;
+
   if (!content) {
-    return responseHelper(
-      h,
-      'failed',
-      'Gagal menambahkan komentar post. Mohon isi konten komentar post.',
-      400,
-    );
+    return response400Handler(h, 'add', 'komentar post', 'content');
   }
 
   if (!postId) {
-    return responseHelper(
-      h,
-      'failed',
-      'Gagal menambahkan komentar post. Mohon isi postId.',
-      400,
-    );
+    return response400Handler(h, 'add', 'komentar post', 'post id');
   }
 
   const createdKomentarPost = await prisma.komentarPost.create({
     data: {
       content,
-      authorId,
+      authorId: requesterUser.data.id,
       postId,
     },
   });
 
-  return responseHelper(
-    h,
-    'success',
-    'Data berhasil ditambahkan',
-    201,
-    createdKomentarPost,
-  );
+  return response201Handler(h, 'komentar post', createdKomentarPost);
 };
 
 module.exports = {

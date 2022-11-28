@@ -5,14 +5,17 @@ const {
   updateKategoriById,
   deleteKategoriById,
 } = require('../handlers/kategoriHandlers');
-const { routesHelper } = require('../helpers/routesHelper');
+const {
+  routesHelper,
+  routesHelperWithoutAuth,
+} = require('../helpers/routesHelper');
 
 const routesKategori = [
-  routesHelper('GET', '/categories', getAllKategori),
-  routesHelper('GET', '/categories/{id}', getKategoriById),
-  routesHelper('PUT', '/categories', updateKategoriById),
-  routesHelper('DELETE', '/categories', deleteKategoriById),
-  routesHelper('POST', '/categories', addKategori),
+  routesHelperWithoutAuth('GET', '/categories', getAllKategori), // everyone
+  routesHelperWithoutAuth('GET', '/categories/{id}', getKategoriById), // everyone
+  routesHelper('PUT', '/categories', updateKategoriById), // admin
+  routesHelper('DELETE', '/categories', deleteKategoriById), // admin
+  routesHelper('POST', '/categories', addKategori), // admin
 ];
 
 module.exports = routesKategori;
