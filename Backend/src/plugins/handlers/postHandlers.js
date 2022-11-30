@@ -1,4 +1,11 @@
-const responseHelper = require('../helpers/responseHelper');
+const {
+  response200Handler,
+  response201Handler,
+  response400Handler,
+  response400HandlerImage,
+  response401Handler,
+  response404Handler,
+} = require('../helpers/responseHelper');
 const {
   validateImageExtension,
   deleteSavedImage,
@@ -40,7 +47,7 @@ const getAllPost = async (request, h) => {
 
   helper(post);
 
-  return responseHelper(h, 'success', 'Data berhasil didapatkan', 200, post);
+  return response200Handler(h, 'get', post);
 };
 
 const getPostById = async (request, h) => {
@@ -48,12 +55,7 @@ const getPostById = async (request, h) => {
   const { id } = request.params;
 
   if (!id) {
-    return responseHelper(
-      h,
-      'failed',
-      'Gagal mendapatkan post. Mohon isi id post.',
-      400,
-    );
+    return response400Handler(h, 'get', 'post', 'id');
   }
 
   const postById = [
@@ -72,23 +74,12 @@ const getPostById = async (request, h) => {
   ];
 
   if (!postById) {
-    return responseHelper(
-      h,
-      'failed',
-      'Gagal mendapatkan data post. Id tidak ditemukan',
-      404,
-    );
+    return response404Handler(h, 'get', 'post', 'Id');
   }
 
   helper(postById);
 
-  return responseHelper(
-    h,
-    'success',
-    'Data berhasil didapatkan',
-    200,
-    postById[0],
-  );
+  return response200Handler(h, 'get', postById[0]);
 };
 
 const getPostWithCommentById = async (request, h) => {
@@ -96,12 +87,7 @@ const getPostWithCommentById = async (request, h) => {
   const id = parseInt(request.params.id, 10);
 
   if (!id) {
-    return responseHelper(
-      h,
-      'failed',
-      'Gagal mendapatkan post. Mohon isi id post.',
-      400,
-    );
+    return response400Handler(h, 'get', 'post', 'id');
   }
 
   const data = await prisma.post.findUnique({
@@ -118,12 +104,7 @@ const getPostWithCommentById = async (request, h) => {
   });
 
   if (!data) {
-    return responseHelper(
-      h,
-      'failed',
-      'Gagal mendapatkan data post. Id tidak ditemukan',
-      404,
-    );
+    return response404Handler(h, 'get', 'post', 'Id');
   }
 
   const postCommentById = [data];
@@ -154,13 +135,7 @@ const getPostWithCommentById = async (request, h) => {
 
   postCommentById[0].komentar = komentar_post;
 
-  return responseHelper(
-    h,
-    'success',
-    'Data berhasil didapatkan',
-    200,
-    postCommentById[0],
-  );
+  return response200Handler(h, 'get', postCommentById[0]);
 };
 
 const getAllPostWithOrderDate = async (request, h) => {
@@ -180,13 +155,7 @@ const getAllPostWithOrderDate = async (request, h) => {
 
   helper(postWithOrderDate);
 
-  return responseHelper(
-    h,
-    'success',
-    'Data berhasil didapatkan',
-    200,
-    postWithOrderDate,
-  );
+  return response200Handler(h, 'get', postWithOrderDate);
 };
 
 const getPostByCategories = async (request, h) => {
@@ -194,12 +163,7 @@ const getPostByCategories = async (request, h) => {
   const id = parseInt(request.params.id, 10);
 
   if (!id) {
-    return responseHelper(
-      h,
-      'failed',
-      'Gagal mendapatkan post. Mohon isi id post.',
-      400,
-    );
+    return response400Handler(h, 'get', 'post', 'id');
   }
 
   const postByCategories = await prisma.post.findMany({
@@ -220,63 +184,35 @@ const getPostByCategories = async (request, h) => {
   });
 
   if (postByCategories.length < 1) {
-    return responseHelper(
-      h,
-      'failed',
-      'Gagal mendapatkan data post. Post dengan id kategori tidak ditemukan',
-      404,
-    );
+    return response404Handler(h, 'get', 'post', 'Id');
   }
 
   helper(postByCategories);
 
-  return responseHelper(
-    h,
-    'success',
-    'Data berhasil didapatkan',
-    200,
-    postByCategories,
-  );
+  return response200Handler(h, 'get', postByCategories);
 };
 
 const updatePost = async (request, h) => {
+  const { userId: uId } = request.auth.credentials;
   const { prisma } = request.server.app;
-  const { id, title, content, authorId, oldImage, newImage } = request.payload;
+
+  const requesterUser = await userChecker(prisma, h, uId, 'update');
+  if (requesterUser.error) {
+    return requesterUser.dataError;
+  }
+
+  const { id, title, content, oldImage, newImage } = request.payload;
 
   if (!id) {
-    return responseHelper(
-      h,
-      'failed',
-      'Gagal memperbarui post. Mohon isi id post',
-      400,
-    );
+    return response400Handler(h, 'update', 'post', 'id');
   }
 
   if (!title) {
-    return responseHelper(
-      h,
-      'failed',
-      'Gagal memperbarui post. Mohon isi title post',
-      400,
-    );
+    return response400Handler(h, 'update', 'post', 'title');
   }
 
   if (!content) {
-    return responseHelper(
-      h,
-      'failed',
-      'Gagal memperbarui post. Mohon isi content post',
-      400,
-    );
-  }
-
-  if (!authorId) {
-    return responseHelper(
-      h,
-      'failed',
-      'Gagal memperbarui post. Mohon isi authorId post',
-      400,
-    );
+    return response400Handler(h, 'update', 'post', 'content');
   }
 
   const postNow = await prisma.post.findUnique({
@@ -291,12 +227,7 @@ const updatePost = async (request, h) => {
   });
 
   if (!postNow) {
-    return responseHelper(
-      h,
-      'failed',
-      'Gagal memperbarui post. Id tidak ditemukan',
-      404,
-    );
+    return response404Handler(h, 'update', 'post', 'Id');
   }
 
   let image_large = postNow.image_large;
@@ -310,9 +241,7 @@ const updatePost = async (request, h) => {
     image_small = dataImage.data.small;
   }
 
-  const authorPId = postNow.authorId;
-
-  if (authorPId == authorId) {
+  if (postNow.authorId == requesterUser.data.id) {
     const now = new Date(Date.now());
     const updatedPost = [
       await prisma.post.update({
@@ -331,15 +260,9 @@ const updatePost = async (request, h) => {
 
     helper(updatedPost);
 
-    return responseHelper(
-      h,
-      'success',
-      'Berhasil memperbarui data post',
-      200,
-      updatedPost[0],
-    );
+    return response200Handler(h, 'update', updatedPost[0]);
   }
-  return responseHelper(h, 'failed', 'Unauthorized, Invalid Author', 401);
+  return response401Handler(h, 'author post.');
 };
 
 const updateUpVote = async (request, h) => {
@@ -347,12 +270,7 @@ const updateUpVote = async (request, h) => {
   const id = parseInt(request.payload.id, 10);
 
   if (!id) {
-    return responseHelper(
-      h,
-      'failed',
-      'Gagal memperbarui up vote post. Mohon isi id post',
-      400,
-    );
+    return response400Handler(h, 'update', 'thumbs up post', 'id');
   }
 
   let { thumbs_up } = await prisma.post.findUnique({
@@ -362,12 +280,7 @@ const updateUpVote = async (request, h) => {
   });
 
   if (!thumbs_up) {
-    return responseHelper(
-      h,
-      'failed',
-      'Gagal memperbarui thumbs up. Id tidak ditemukan',
-      404,
-    );
+    return response404Handler(h, 'update', 'thumbs up post', 'Id');
   }
 
   const post = await prisma.post.update({
@@ -379,13 +292,7 @@ const updateUpVote = async (request, h) => {
     },
   });
 
-  return responseHelper(
-    h,
-    'success',
-    'Berhasil memperbarui up vote post',
-    200,
-    post,
-  );
+  return response200Handler(h, 'update', post);
 };
 
 const updateDownVote = async (request, h) => {
@@ -393,12 +300,7 @@ const updateDownVote = async (request, h) => {
   const id = parseInt(request.payload.id, 10);
 
   if (!id) {
-    return responseHelper(
-      h,
-      'failed',
-      'Gagal memperbarui down vote post. Mohon isi id post',
-      400,
-    );
+    return response400Handler(h, 'update', 'thumbs down post', 'id');
   }
 
   let { thumbs_down } = await prisma.post.findUnique({
@@ -408,12 +310,7 @@ const updateDownVote = async (request, h) => {
   });
 
   if (!thumbs_down) {
-    return responseHelper(
-      h,
-      'failed',
-      'Gagal memperbarui thumbs down. Id tidak ditemukan',
-      404,
-    );
+    return response404Handler(h, 'update', 'thumbs up forum', 'Id');
   }
 
   const post = await prisma.post.update({
@@ -425,84 +322,62 @@ const updateDownVote = async (request, h) => {
     },
   });
 
-  return responseHelper(
-    h,
-    'success',
-    'Berhasil memperbarui down vote post',
-    200,
-    post,
-  );
+  return response200Handler(h, 'update', post);
 };
 
 const deletePostById = async (request, h) => {
+  const { userId: uId } = request.auth.credentials;
   const { prisma } = request.server.app;
+
+  const requesterUser = await userChecker(prisma, h, uId, 'delete');
+  if (requesterUser.error) {
+    return requesterUser.dataError;
+  }
+
   const id = parseInt(request.payload.id, 10);
 
   if (!id) {
-    return responseHelper(
-      h,
-      'failed',
-      'Gagal menghapus post. Mohon isi id post',
-      400,
-    );
+    return response400Handler(h, 'delete', 'post', 'id');
   }
 
-  let deletedPost;
-  try {
-    deletedPost = await prisma.post.delete({
-      where: {
-        id,
-      },
-    });
-  } catch (e) {
-    return responseHelper(
-      h,
-      'failed',
-      'Gagal menghapus post. Id tidak ditemukan',
-      404,
-    );
+  let deletedPost = await prisma.post.findUnique({ where: { id } });
+
+  if (!deletedPost) {
+    return response404Handler(h, 'delete', 'post', 'Id');
   }
 
-  return responseHelper(
-    h,
-    'success',
-    'Berhasil menghapus data post.',
-    200,
-    deletedPost,
-  );
+  if (deletedPost.authorId != requesterUser.data.id) {
+    return response401Handler(h, 'author post');
+  }
+
+  deletedPost = await prisma.post.delete({
+    where: {
+      id,
+    },
+  });
+
+  return response200Handler(h, 'delete', deletedPost);
 };
 
 const addPost = async (request, h) => {
+  const { userId: uId } = request.auth.credentials;
   const { prisma } = request.server.app;
-  const { title, content, image, authorId } = request.payload;
+
+  const requesterUser = await userChecker(prisma, h, uId, 'add');
+  if (requesterUser.error) {
+    return requesterUser.dataError;
+  }
+
+  const { title, content, image } = request.payload;
 
   let dataImage;
 
   if (!title) {
-    return responseHelper(
-      h,
-      'failed',
-      'Gagal menambahkan post. Mohon isi title post',
-      400,
-    );
+    return response400Handler(h, 'add', 'post', 'title');
   }
 
   if (!content) {
-    return responseHelper(
-      h,
-      'failed',
-      'Gagal menambahkan post. Mohon isi content post',
-      400,
-    );
-  }
-
-  if (!authorId) {
-    return responseHelper(
-      h,
-      'failed',
-      'Gagal menambahkan post. Mohon isi authorId post',
-      400,
-    );
+    return response400Handler(h, 'add', 'post', 'content');
   }
 
   if (validateImageExtension(image)) {
@@ -510,27 +385,20 @@ const addPost = async (request, h) => {
       dataImage = await saveImage(image, 'post');
     }
   } else {
-    return responseHelper(
-      h,
-      'failed',
-      'Gagal menambahkan gambar. Mohon memberikan gambar dengan ekstensi [jpg, jpeg, atau png]',
-      400,
-    );
+    return response400HandlerImage(h);
   }
 
   const createdPost = await prisma.post.create({
     data: {
       title,
       content,
-      authorId,
+      authorId: requesterUser.data.id,
       image_large: dataImage?.data.large,
       image_small: dataImage?.data.small,
     },
   });
 
-  return responseHelper(h, 'success', 'Post berhasil ditambahkan', 201, {
-    createdPost,
-  });
+  return response201Handler(h, 'post', createdPost);
 };
 
 module.exports = {

@@ -3,12 +3,15 @@ const {
   getKategoriForumById,
   addKategoriForum,
 } = require('../handlers/kategoriForumHandlers');
-const { routesHelper } = require('../helpers/routesHelper');
+const {
+  routesHelper,
+  routesHelperWithoutAuth,
+} = require('../helpers/routesHelper');
 
 const routesKategoriForum = [
-  routesHelper('GET', '/kategori_forum', getKategoriForum),
-  routesHelper('GET', '/kategori_forum/{id}', getKategoriForumById),
-  routesHelper('POST', '/kategori_forum', addKategoriForum),
+  routesHelperWithoutAuth('GET', '/kategori_forum', getKategoriForum), // everyone
+  routesHelperWithoutAuth('GET', '/kategori_forum/{id}', getKategoriForumById), // everyone
+  routesHelper('POST', '/kategori_forum', addKategoriForum), // user
 ];
 
 module.exports = routesKategoriForum;

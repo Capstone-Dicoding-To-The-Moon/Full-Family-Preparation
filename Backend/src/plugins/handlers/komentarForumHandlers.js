@@ -1,15 +1,16 @@
-const responseHelper = require('../helpers/responseHelper');
+const {
+  response200Handler,
+  response201Handler,
+  response400Handler,
+  response401Handler,
+  response404Handler,
+} = require('../helpers/responseHelper');
+const { userChecker } = require('../helpers/usersChecker');
 
 const getKomentarForum = async (request, h) => {
   const { prisma } = request.server.app;
   const komentarForum = await prisma.komentarForum.findMany({});
-  return responseHelper(
-    h,
-    'success',
-    'Data berhasil didapatkan',
-    200,
-    komentarForum,
-  );
+  return response200Handler(h, 'get', komentarForum);
 };
 
 const getKomentarForumById = async (request, h) => {
@@ -17,12 +18,7 @@ const getKomentarForumById = async (request, h) => {
   const { id } = request.params;
 
   if (!id) {
-    return responseHelper(
-      h,
-      'failed',
-      'Gagal mendapatkan komentar forum. Mohon isi id komentar forum',
-      400,
-    );
+    return response400Handler(h, 'get', 'komentar forum', 'id');
   }
 
   const komentarForumById = await prisma.komentarForum.findUnique({
@@ -32,163 +28,123 @@ const getKomentarForumById = async (request, h) => {
   });
 
   if (komentarForumById) {
-    return responseHelper(
-      h,
-      'success',
-      'Data berhasil didapatkan',
-      200,
-      komentarForumById,
-    );
+    return response200Handler(h, 'get', komentarForumById);
   }
 
-  return responseHelper(
-    h,
-    'failed',
-    'Gagal mendapatkan komentar forum. Id tidak ditemukan.',
-    404,
-  );
+  return response404Handler(h, 'get', 'komentar forum', 'Id');
 };
 
 const updateKomentarForum = async (request, h) => {
+  const { userId: uId } = request.auth.credentials;
   const { prisma } = request.server.app;
+
+  const requesterUser = await userChecker(prisma, h, uId, 'update');
+  if (requesterUser.error) {
+    return requesterUser.dataError;
+  }
+
   const id = parseInt(request.payload.id, 10);
   const { content } = request.payload;
 
   if (!id) {
-    return responseHelper(
-      h,
-      'failed',
-      'Gagal memperbarui komentar forum. Mohon isi id komentar forum.',
-      400,
-    );
+    return response400Handler(h, 'update', 'komentar forum', 'id');
   }
 
   if (!content) {
-    return responseHelper(
-      h,
-      'failed',
-      'Gagal memperbarui komentar forum. Mohon isi konten komentar forum.',
-      400,
-    );
+    return response400Handler(h, 'update', 'komentar forum', 'content');
   }
 
   const now = new Date(Date.now());
 
-  let updatedKomentarForum;
+  let updatedKomentarForum = await prisma.komentarForum.findUnique({
+    where: { id },
+  });
 
-  try {
-    updatedKomentarForum = await prisma.komentarForum.update({
-      where: {
-        id,
-      },
-      data: {
-        content,
-        updatedAt: now,
-      },
-    });
-  } catch (e) {
-    return responseHelper(
-      h,
-      'failed',
-      'Gagal menghapus komentar forum. Id tidak ditemukan.',
-      404,
-    );
+  if (!updatedKomentarForum) {
+    return response404Handler(h, 'update', 'komentar forum', 'Id');
   }
 
-  return responseHelper(
-    h,
-    'success',
-    'Data berhasil diperbarui',
-    200,
-    updatedKomentarForum,
-  );
+  if (updatedKomentarForum.authorId != requesterUser.data.id) {
+    return response401Handler(h, 'author komentar forum');
+  }
+
+  updatedKomentarForum = await prisma.komentarForum.update({
+    where: {
+      id,
+    },
+    data: {
+      content,
+      updatedAt: now,
+    },
+  });
+
+  return response200Handler(h, 'update', updatedKomentarForum);
 };
 
 const deleteKomentarForum = async (request, h) => {
+  const { userId: uId } = request.auth.credentials;
   const { prisma } = request.server.app;
+
+  const requesterUser = await userChecker(prisma, h, uId, 'delete');
+  if (requesterUser.error) {
+    return requesterUser.dataError;
+  }
+
   const id = parseInt(request.payload.id, 10);
 
   if (!id) {
-    return responseHelper(
-      h,
-      'failed',
-      'Gagal menghapus komentar forum. Mohon isi id komentar forum.',
-      400,
-    );
+    return response400Handler(h, 'delete', 'komentar forum', 'id');
   }
 
-  let deletedKomentarForum;
+  let deletedKomentarForum = await prisma.komentarForum.findUnique({
+    where: { id },
+  });
 
-  try {
-    deletedKomentarForum = await prisma.komentarForum.delete({
-      where: {
-        id,
-      },
-    });
-  } catch (e) {
-    return responseHelper(
-      h,
-      'failed',
-      'Gagal menghapus komentar forum. Id tidak ditemukan.',
-      404,
-    );
+  if (!deletedKomentarForum) {
+    return response404Handler(h, 'delete', 'komentar forum', 'Id');
   }
 
-  return responseHelper(
-    h,
-    'success',
-    'Data berhasil dihapus',
-    200,
-    deletedKomentarForum,
-  );
+  if (deletedKomentarForum.authorId != requesterUser.data.id) {
+    return response401Handler(h, 'author komentar forum');
+  }
+
+  deletedKomentarForum = await prisma.komentarForum.delete({
+    where: {
+      id,
+    },
+  });
+
+  return response200Handler(h, 'delete', deletedKomentarForum);
 };
 
 const addKomentarForum = async (request, h) => {
+  const { userId: uId } = request.auth.credentials;
   const { prisma } = request.server.app;
-  const { content, authorId, forumId } = request.payload;
 
-  if (!authorId) {
-    return responseHelper(
-      h,
-      'failed',
-      'Gagal menambahkan komentar forum. Mohon isi authorId.',
-      400,
-    );
+  const requesterUser = await userChecker(prisma, h, uId, 'add');
+  if (requesterUser.error) {
+    return requesterUser.dataError;
   }
 
+  const { content, forumId } = request.payload;
+
   if (!content) {
-    return responseHelper(
-      h,
-      'failed',
-      'Gagal menambahkan komentar forum. Mohon isi konten komentar forum.',
-      400,
-    );
+    return response400Handler(h, 'add', 'komentar forum', 'content');
   }
 
   if (!forumId) {
-    return responseHelper(
-      h,
-      'failed',
-      'Gagal menambahkan komentar forum. Mohon isi forumId.',
-      400,
-    );
+    return response400Handler(h, 'add', 'komentar forum', 'forum id');
   }
 
   const createdKomentarForum = await prisma.komentarForum.create({
     data: {
       content,
-      authorId,
+      authorId: requesterUser.data.id,
       forumId,
     },
   });
 
-  return responseHelper(
-    h,
-    'success',
-    'Data berhasil ditambahkan',
-    201,
-    createdKomentarForum,
-  );
+  return response201Handler(h, 'komentar forum', createdKomentarForum);
 };
 
 module.exports = {

@@ -1,15 +1,15 @@
-const responseHelper = require('../helpers/responseHelper');
+const {
+  response200Handler,
+  response201Handler,
+  response400Handler,
+  response404Handler,
+} = require('../helpers/responseHelper');
+const { adminChecker } = require('../helpers/usersChecker');
 
 const getAllKategori = async (request, h) => {
   const { prisma } = request.server.app;
   const kategori = await prisma.kategori.findMany({});
-  return responseHelper(
-    h,
-    'success',
-    'Data berhasil didapatkan',
-    200,
-    kategori,
-  );
+  return response200Handler(h, 'get', kategori);
 };
 
 const getKategoriById = async (request, h) => {
@@ -17,12 +17,7 @@ const getKategoriById = async (request, h) => {
   const id = parseInt(request.params.id, 10);
 
   if (!id) {
-    return responseHelper(
-      h,
-      'failed',
-      'Gagal mendapatkan kategori. Mohon isi id kategori.',
-      400,
-    );
+    return response400Handler(h, 'get', 'kategori', 'id');
   }
 
   const kategoriById = await prisma.kategori.findUnique({
@@ -32,53 +27,34 @@ const getKategoriById = async (request, h) => {
   });
 
   if (kategoriById) {
-    return responseHelper(
-      h,
-      'success',
-      'Data berhasil didapatkan',
-      200,
-      kategoriById,
-    );
+    return response200Handler(h, 'get', kategoriById);
   }
 
-  return responseHelper(
-    h,
-    'failed',
-    'Gagal mendapatkan kategori. Id tidak ditemukan.',
-    404,
-  );
+  return response404Handler(h, 'get', 'kategori', 'Id');
 };
 
 const updateKategoriById = async (request, h) => {
+  const { userId: uId } = request.auth.credentials;
   const { prisma } = request.server.app;
+
+  const requesterUser = await adminChecker(prisma, h, uId, 'update');
+  if (requesterUser.error) {
+    return requesterUser.dataError;
+  }
+
   const id = parseInt(request.payload.id, 10);
   const { name, title } = request.payload;
 
   if (!id) {
-    return responseHelper(
-      h,
-      'failed',
-      'Gagal memperbarui kategori. Mohon isi id kategori.',
-      400,
-    );
+    return response400Handler(h, 'update', 'kategori', 'id');
   }
 
   if (!name) {
-    return responseHelper(
-      h,
-      'failed',
-      'Gagal memperbarui kategori. Mohon isi name kategori.',
-      400,
-    );
+    return response400Handler(h, 'update', 'kategori', 'name');
   }
 
   if (!title) {
-    return responseHelper(
-      h,
-      'failed',
-      'Gagal memperbarui kategori. Mohon isi title kategori.',
-      400,
-    );
+    return response400Handler(h, 'update', 'kategori', 'title');
   }
 
   const now = new Date(Date.now());
@@ -92,41 +68,33 @@ const updateKategoriById = async (request, h) => {
       data: {
         title,
         updatedAt: now,
-        updatedBy: name,
+        updatedBy: requesterUser.data.name,
       },
     });
   } catch (e) {
-    return responseHelper(
-      h,
-      'failed',
-      'Gagal menghapus kategori. Id tidak ditemukan.',
-      404,
-    );
+    return response404Handler(h, 'update', 'kategori', 'Id');
   }
 
-  return responseHelper(
-    h,
-    'success',
-    'Data berhasil diperbarui',
-    200,
-    updatedKategori,
-  );
+  return response200Handler(h, 'update', updatedKategori);
 };
 
 const deleteKategoriById = async (request, h) => {
+  const { userId: uId } = request.auth.credentials;
   const { prisma } = request.server.app;
+
+  const requesterUser = await adminChecker(prisma, h, uId, 'delete');
+  if (requesterUser.error) {
+    return requesterUser.dataError;
+  }
+
   const id = parseInt(request.payload.id, 10);
 
   if (!id) {
-    return responseHelper(
-      h,
-      'failed',
-      'Gagal menghapus kategori. Mohon isi id kategori.',
-      400,
-    );
+    return response400Handler(h, 'delete', 'kategori', 'id');
   }
 
   let deletedKategori;
+
   try {
     deletedKategori = await prisma.kategori.delete({
       where: {
@@ -134,68 +102,36 @@ const deleteKategoriById = async (request, h) => {
       },
     });
   } catch (e) {
-    return responseHelper(
-      h,
-      'failed',
-      'Gagal menghapus kategori. Id tidak ditemukan.',
-      404,
-    );
+    return response404Handler(h, 'delete', 'kategori', 'Id');
   }
-  return responseHelper(
-    h,
-    'success',
-    'Data berhasil dihapus',
-    200,
-    deletedKategori,
-  );
+
+  return response200Handler(h, 'delete', deletedKategori);
 };
 
 const addKategori = async (request, h) => {
+  const { userId: uId } = request.auth.credentials;
   const { prisma } = request.server.app;
-  const { title, authorId, updatedBy } = request.payload;
 
-  if (!authorId) {
-    return responseHelper(
-      h,
-      'failed',
-      'Gagal menambahkan kategori. Mohon isi authorId.',
-      400,
-    );
+  const requesterUser = await adminChecker(prisma, h, uId, 'delete');
+  if (requesterUser.error) {
+    return requesterUser.dataError;
   }
+
+  const { title } = request.payload;
 
   if (!title) {
-    return responseHelper(
-      h,
-      'failed',
-      'Gagal menambahkan kategori. Mohon isi title kategori.',
-      400,
-    );
-  }
-
-  if (!updatedBy) {
-    return responseHelper(
-      h,
-      'failed',
-      'Gagal menambahkan kategori. Mohon isi nama user.',
-      400,
-    );
+    return response400Handler(h, 'add', 'kategori', 'title');
   }
 
   const createdKategori = await prisma.kategori.create({
     data: {
       title,
-      authorId,
-      updatedBy,
+      authorId: requesterUser.data.id,
+      updatedBy: requesterUser.data.name,
     },
   });
 
-  return responseHelper(
-    h,
-    'success',
-    'Data berhasil ditambahkan',
-    201,
-    createdKategori,
-  );
+  return response201Handler(h, 'forum', createdKategori);
 };
 
 module.exports = {

@@ -1,9 +1,15 @@
-const responseHelper = require('../helpers/responseHelper');
+const {
+  response200Handler,
+  response201Handler,
+  response400Handler,
+  response404Handler,
+} = require('../helpers/responseHelper');
+const { adminChecker } = require('../helpers/usersChecker');
 
 const getRole = async (request, h) => {
   const { prisma } = request.server.app;
   const role = await prisma.role.findMany({});
-  return responseHelper(h, 'success', 'Data berhasil didapatkan', 200, role);
+  return response200Handler(h, 'get', role);
 };
 
 const getRoleById = async (request, h) => {
@@ -11,12 +17,7 @@ const getRoleById = async (request, h) => {
   const { id } = request.params;
 
   if (!id) {
-    return responseHelper(
-      h,
-      'failed',
-      'Gagal mendapatkan role. Mohon isi id role.',
-      400,
-    );
+    return response400Handler(h, 'get', 'role', 'id');
   }
 
   const roleById = await prisma.role.findUnique({
@@ -26,34 +27,25 @@ const getRoleById = async (request, h) => {
   });
 
   if (!roleById) {
-    return responseHelper(
-      h,
-      'fail',
-      'Gagal mendapatkan data role. Id tidak ditemukan',
-      404,
-    );
+    return response404Handler(h, 'get', 'role', 'Id');
   }
 
-  return responseHelper(
-    h,
-    'success',
-    'Data berhasil didapatkan',
-    200,
-    roleById,
-  );
+  return response200Handler(h, 'get', roleById);
 };
 
 const addRole = async (request, h) => {
+  const { userId: uId } = request.auth.credentials;
   const { prisma } = request.server.app;
+
+  const requesterUser = await adminChecker(prisma, h, uId, 'add');
+  if (requesterUser.error) {
+    return requesterUser.dataError;
+  }
+
   const { role } = request.payload;
 
   if (!role) {
-    return responseHelper(
-      h,
-      'failed',
-      'Gagal menambahkan role. Mohon isi nama role',
-      400,
-    );
+    return response400Handler(h, 'add', 'role', 'role');
   }
 
   const createdRole = await prisma.role.create({
@@ -62,9 +54,7 @@ const addRole = async (request, h) => {
     },
   });
 
-  return responseHelper(h, 'success', 'Forum berhasil ditambahkan', 201, {
-    createdRole,
-  });
+  return response201Handler(h, 'forum', createdRole);
 };
 
 module.exports = { getRole, getRoleById, addRole };
