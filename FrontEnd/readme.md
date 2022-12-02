@@ -1,9 +1,12 @@
 # Family Preparation - Front End
 
-<details><summary>Dikembangkan oleh</summary>
-  <br>
-  <ul>
+## Dikembangkan oleh
+  <ol>
     <li>Dewa Putra Hernanda</li>
     <li>Desi Sihamita</li>
-  </ul>
-</details>
+  </ol>
+  
+### Link aplikasi
+- https://family-preparation.vercel.app/
+
+
