@@ -1,4 +1,11 @@
-# API
+# How to run
+
+1. npm install
+2. npx prisma db push
+3. npx prisma generate
+4. npm run start
+
+# API Dokumentasi
 Repository yang berisi tentang kebutuhan untuk implementasi API dari aplikasi.
 
 _src\plugins\routes\routesAdmin.js_
