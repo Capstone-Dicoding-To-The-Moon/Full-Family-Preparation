@@ -1,5 +1,5 @@
 # Full-Family-Preparation
-Repositori ini untuk dilihat oleh pihak luar (Dicoding).
+Repository yang sudah berisi file back-end dan juga front-end yang terbaru
 
 ## How To Run
 1. Clone repo back-end dan front-end
